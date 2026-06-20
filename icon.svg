@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 背景 -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a5f"/>
+      <stop offset="100%" style="stop-color:#0f172a"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fde68a"/>
+      <stop offset="100%" style="stop-color:#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- 星装飾 -->
+  <circle cx="80" cy="90" r="6" fill="#fde68a" opacity="0.6"/>
+  <circle cx="430" cy="120" r="4" fill="#fde68a" opacity="0.4"/>
+  <circle cx="60" cy="400" r="5" fill="#fde68a" opacity="0.5"/>
+  <circle cx="450" cy="380" r="7" fill="#fde68a" opacity="0.3"/>
+
+  <!-- キャラ体（丸いボディ） -->
+  <ellipse cx="256" cy="310" rx="90" ry="80" fill="#f59e0b"/>
+  <ellipse cx="256" cy="310" rx="70" ry="62" fill="#fde68a"/>
+
+  <!-- 手 -->
+  <ellipse cx="148" cy="300" rx="32" ry="28" fill="#f59e0b"/>
+  <ellipse cx="364" cy="300" rx="32" ry="28" fill="#f59e0b"/>
+
+  <!-- 足 -->
+  <ellipse cx="210" cy="385" rx="28" ry="22" fill="#f59e0b"/>
+  <ellipse cx="302" cy="385" rx="28" ry="22" fill="#f59e0b"/>
+
+  <!-- 頭 -->
+  <circle cx="256" cy="195" r="95" fill="#f59e0b"/>
+  <circle cx="256" cy="195" r="80" fill="#fde68a"/>
+
+  <!-- 目 -->
+  <ellipse cx="222" cy="188" rx="14" ry="16" fill="#1e3a5f"/>
+  <ellipse cx="290" cy="188" rx="14" ry="16" fill="#1e3a5f"/>
+  <circle cx="226" cy="184" r="5" fill="white"/>
+  <circle cx="294" cy="184" r="5" fill="white"/>
+
+  <!-- ほっぺ -->
+  <ellipse cx="195" cy="208" rx="16" ry="10" fill="#f87171" opacity="0.5"/>
+  <ellipse cx="317" cy="208" rx="16" ry="10" fill="#f87171" opacity="0.5"/>
+
+  <!-- 口 -->
+  <path d="M236,215 Q256,232 276,215" stroke="#1e3a5f" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- 王冠 -->
+  <path d="M186,130 L210,100 L256,120 L302,100 L326,130 L310,145 L256,138 L202,145 Z" fill="url(#gold)"/>
+  <circle cx="256" cy="108" r="8" fill="#ef4444"/>
+  <circle cx="210" cy="100" r="6" fill="#ef4444"/>
+  <circle cx="302" cy="100" r="6" fill="#ef4444"/>
+
+  <!-- フォークとナイフ -->
+  <rect x="158" y="270" width="6" height="40" rx="3" fill="#94a3b8"/>
+  <rect x="348" y="270" width="6" height="40" rx="3" fill="#94a3b8"/>
+
+  <!-- ゲームっぽいテキスト -->
+  <text x="256" y="465" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="42" font-weight="900" fill="url(#gold)" letter-spacing="2">カロリー</text>
+  <text x="256" y="500" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="28" font-weight="900" fill="#94a3b8" letter-spacing="1">冒険記</text>
+</svg>
