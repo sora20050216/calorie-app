@@ -1,0 +1,909 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>カロリー冒険記</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f0f4f8; color: #1a202c; font-family: -apple-system, BlinkMacSystemFont, sans-serif; min-height: 100vh; display: flex; justify-content: center; }
+  #app { width: 100%; max-width: 430px; min-height: 100vh; display: flex; flex-direction: column; }
+  .page { flex: 1; padding: 16px; padding-bottom: 80px; display: none; }
+  .page.active { display: block; }
+
+  nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: #fff; border-top: 1px solid #e2e8f0; display: flex; z-index: 100; box-shadow: 0 -2px 12px rgba(0,0,0,.07); }
+  nav button { flex: 1; padding: 10px 4px; background: none; border: none; color: #94a3b8; font-size: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  nav button.active { color: #f97316; }
+  nav button svg { width: 20px; height: 20px; }
+
+  .card { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
+  .card h2 { font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 12px; }
+
+  input[type=text], input[type=number] { width: 100%; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; color: #1a202c; font-size: 15px; outline: none; }
+  input:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,.12); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .unit { color: #94a3b8; font-size: 13px; white-space: nowrap; }
+  .btn { padding: 12px 16px; border-radius: 12px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .btn-orange { background: #f97316; color: #fff; }
+  .btn-blue { background: #3b82f6; color: #fff; }
+  .act-btn { padding:8px 12px;border-radius:10px;border:none;background:#f1f5f9;color:#334155;font-size:13px;font-weight:600;cursor:pointer;flex:1; }
+  .btn-gray { background: #f1f5f9; color: #64748b; }
+  .btn-gacha { width: 100%; padding: 16px; font-size: 18px; border-radius: 16px; border: none; font-weight: 700; cursor: pointer; background: linear-gradient(135deg,#f97316,#eab308); color: #fff; margin-top: 8px; box-shadow: 0 4px 12px rgba(249,115,22,.3); }
+  .btn-gacha:disabled { background: #e2e8f0; color: #94a3b8; cursor: default; box-shadow: none; }
+
+  .bar-wrap { background: #f1f5f9; border-radius: 999px; overflow: hidden; }
+  .bar { height: 100%; border-radius: 999px; transition: width .4s; }
+
+  .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; text-align: center; margin-bottom: 12px; }
+  .stat-box { background: #f8fafc; border-radius: 12px; padding: 10px 4px; }
+  .stat-label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
+  .stat-val { font-size: 22px; font-weight: 700; }
+  .stat-unit { font-size: 10px; color: #94a3b8; }
+
+  .alert-y { background: #fff7ed; border: 1.5px solid #fed7aa; color: #c2410c; border-radius: 12px; padding: 12px; text-align: center; font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+  .alert-g { background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #15803d; border-radius: 12px; padding: 10px 12px; text-align: center; font-size: 13px; font-weight: 600; }
+
+  /* アドバイスカード */
+  .advice-card { background: linear-gradient(135deg,#eff6ff,#f0fdf4); border: 1.5px solid #bfdbfe; border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px; }
+  .advice-icon { font-size: 22px; flex-shrink: 0; }
+  .advice-text { font-size: 13px; color: #1e40af; line-height: 1.5; font-weight: 500; }
+
+  .meal-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px; margin-bottom: 6px; }
+  .del-btn { background: none; border: none; color: #cbd5e1; font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1; }
+  .del-btn:hover { color: #ef4444; }
+
+  .char-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+  .char-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: 12px; cursor: pointer; border: 1.5px solid transparent; transition: transform .1s; }
+  .char-cell:active { transform: scale(.95); }
+
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+  .modal-box { background: #fff; border-radius: 24px 24px 0 0; width: 100%; max-width: 430px; padding: 24px; box-shadow: 0 -4px 24px rgba(0,0,0,.12); }
+  .rank-badge { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px; display: inline-block; }
+  .page-title { font-size: 20px; font-weight: 700; padding-top: 16px; margin-bottom: 16px; color: #0f172a; }
+
+  #gacha-result { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 8px 0; }
+
+  /* ヘッダー */
+  .app-header { background: linear-gradient(135deg,#f97316,#eab308); padding: 20px 16px 16px; text-align: center; color: #fff; }
+  .app-header h1 { font-size: 22px; font-weight: 800; letter-spacing: .5px; }
+  .app-header p { font-size: 12px; opacity: .85; margin-top: 2px; }
+
+
+  /* キャラアドバイスカード */
+  .char-adv-card { background: linear-gradient(135deg,#eff6ff,#f0fdf4); border: 1.5px solid #bfdbfe; border-radius: 16px; padding: 12px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  .char-adv-bubble { flex:1; background:#fff; border-radius:12px; padding:10px 12px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .char-adv-name { font-size:11px; font-weight:700; margin-bottom:3px; }
+  .char-adv-text { font-size:13px; color:#334155; line-height:1.5; }
+  .char-adv-svg { flex-shrink:0; }
+  @keyframes bop { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-18px)} }
+  @keyframes pls { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .bop { animation: bop .6s infinite; display:inline-block; }
+  .pls { animation: pls .8s infinite; }
+
+  /* ガチャ演出 */
+  .gacha-box { background: linear-gradient(135deg,#fff7ed,#fffbeb); border: 2px dashed #fed7aa; border-radius: 20px; padding: 24px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <div class="page active" id="page-home">
+    <div class="app-header" style="margin:-16px -16px 16px;border-radius:0 0 20px 20px">
+      <h1>&#x1F371; カロリー冒険記</h1>
+      <p id="today-date"></p>
+    </div>
+
+    <div class="alert-y" id="gacha-notice" style="display:none">&#x1F3B0; 今日のガチャが引けます！</div>
+
+    <!-- アドバイス -->
+    <div class="char-adv-card" id="advice-card">
+      <div class="char-adv-svg" id="advice-svg"></div>
+      <div class="char-adv-bubble">
+        <div class="char-adv-name" id="advice-name"></div>
+        <div class="char-adv-text" id="advice-text">読み込み中...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>今日のカロリー</h2>
+      <div class="stats">
+        <div class="stat-box"><div class="stat-label">摂取</div><div class="stat-val" id="h-intake" style="color:#f97316">0</div><div class="stat-unit">kcal</div></div>
+        <div class="stat-box"><div class="stat-label">消費</div><div class="stat-val" id="h-burned" style="color:#3b82f6">0</div><div class="stat-unit">kcal</div></div>
+        <div class="stat-box"><div class="stat-label">差分</div><div class="stat-val" id="h-diff" style="color:#22c55e">0</div><div class="stat-unit">kcal</div></div>
+      </div>
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-bottom:4px"><span>摂取カロリー</span><span id="h-bar-label">0 / 2000 kcal</span></div>
+        <div class="bar-wrap" style="height:14px"><div class="bar" id="h-bar" style="width:0%;background:#f97316"></div></div>
+      </div>
+      <div class="alert-g" id="diet-notice" style="display:none"></div>
+    </div>
+
+    <div class="card" id="home-chars" style="display:none"><h2>育成中のキャラ</h2><div id="home-char-list"></div></div>
+    <div class="card" id="home-empty" style="text-align:center;color:#94a3b8;padding:24px">
+      <div style="font-size:40px;margin-bottom:8px">&#x1F3B0;</div>
+      <div style="font-size:14px">ガチャを引いてキャラをゲットしよう！</div>
+    </div>
+  </div>
+
+  <!-- RECORD -->
+  <div class="page" id="page-record">
+    <div class="page-title">&#x1F4DD; カロリー記録</div>
+    <div class="card">
+      <h2>&#x1F3C3; 消費カロリー</h2>
+      <div id="tdee-display" style="display:none;margin-bottom:10px;padding:10px;background:linear-gradient(135deg,#eff6ff,#f0fdf4);border-radius:10px;font-size:13px;text-align:center;color:#1d4ed8"></div>
+      <div style="margin-bottom:8px;display:flex;gap:6px;justify-content:center">
+        <button class="act-btn" data-act="low" onclick="setActivity('low')">🚶 少ない</button>
+        <button class="act-btn" data-act="mid" onclick="setActivity('mid')">🏃 中くらい</button>
+        <button class="act-btn" data-act="high" onclick="setActivity('high')">⚡ 多い</button>
+      </div>
+      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-bottom:8px">活動量を選ぶと自動計算されます</div>
+      <div class="row" style="margin-bottom:6px">
+        <input type="number" id="burned-input" placeholder="手動で入力">
+        <span class="unit">kcal</span>
+        <button class="btn btn-blue" onclick="saveBurned()">保存</button>
+      </div>
+      <div style="font-size:12px;color:#94a3b8">現在: <span id="burned-current">0</span> kcal</div>
+    </div>
+    <div class="card">
+      <h2>&#x1F464; プロフィール設定</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:3px">性別</div>
+          <select id="prof-gender" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e2e8f0;font-size:14px">
+            <option value="male">男性</option>
+            <option value="female">女性</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:3px">年齢</div>
+          <div class="row" style="margin:0"><input type="number" id="prof-age" placeholder="25" style="flex:1"><span class="unit">歳</span></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:3px">身長</div>
+          <div class="row" style="margin:0"><input type="number" id="prof-height" placeholder="170" style="flex:1"><span class="unit">cm</span></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:3px">体重</div>
+          <div class="row" style="margin:0"><input type="number" id="prof-weight" placeholder="60" style="flex:1"><span class="unit">kg</span></div>
+        </div>
+      </div>
+      <button class="btn btn-blue" style="width:100%" onclick="saveProfile()">保存して消費カロリーを計算</button>
+      <div id="prof-result" style="margin-top:8px;font-size:12px;color:#94a3b8;text-align:center"></div>
+    </div>
+    <div class="card">
+      <h2>&#x1F374; 食事を追加</h2>
+      <div style="margin-bottom:10px">
+        <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:linear-gradient(135deg,#eff6ff,#f0fdf4);border:1.5px dashed #93c5fd;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;color:#1d4ed8" id="photo-label">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          写真でカロリー自動判定
+          <input type="file" accept="image/*" capture="environment" id="photo-input" style="display:none" onchange="analyzePhoto(this)">
+        </label>
+        <div id="photo-status" style="display:none;margin-top:8px;padding:10px;border-radius:10px;font-size:13px;text-align:center"></div>
+      </div>
+      <input type="text" id="meal-name" placeholder="食事名（例: 朝ごはん、ラーメン）" style="margin-bottom:8px">
+      <div class="row">
+        <input type="number" id="meal-cal" placeholder="カロリー">
+        <span class="unit">kcal</span>
+        <button class="btn btn-orange" onclick="addMeal()">追加</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:13px;color:#64748b;font-weight:600">今日の食事</span>
+        <span style="color:#f97316;font-weight:700" id="total-intake-label">0 kcal</span>
+      </div>
+      <div id="meal-list"><div style="text-align:center;color:#cbd5e1;font-size:13px;padding:16px">まだ記録がありません</div></div>
+    </div>
+  </div>
+
+  <!-- GACHA -->
+  <div class="page" id="page-gacha">
+    <div class="page-title">&#x1F3B0; ガチャ</div>
+    <div class="gacha-box" style="text-align:center">
+      <div id="gacha-idle">
+        <div style="font-size:64px;margin-bottom:12px">&#x1F3B2;</div>
+        <div style="font-size:14px;color:#92400e;font-weight:600;margin-bottom:4px" id="gacha-msg">今日のガチャが引けます！</div>
+        <div style="font-size:11px;color:#b45309;margin-bottom:12px">S: 2% / A: 8% / B: 15% / C: 25% / D: 50%</div>
+      </div>
+      <div id="gacha-animating" style="display:none;padding:24px 0">
+        <div style="font-size:64px" class="bop">&#x2728;</div>
+        <div style="color:#f97316;font-weight:700;margin-top:12px" class="pls">ガチャ中...</div>
+      </div>
+      <div id="gacha-result" style="display:none"></div>
+      <button class="btn-gacha" id="gacha-btn" onclick="doGacha()">無料ガチャを引く！</button>
+    </div>
+    <div class="card"><h2>排出率</h2><div id="rate-table"></div></div>
+  </div>
+
+  <!-- COLLECTION -->
+  <div class="page" id="page-collection">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;margin-bottom:16px">
+      <div class="page-title" style="padding-top:0;margin-bottom:0">&#x1F4D6; 図鑑</div>
+      <div style="font-size:13px;color:#64748b;background:#fff;border-radius:999px;padding:4px 12px;box-shadow:0 1px 4px rgba(0,0,0,.08)" id="col-count">0 / 10</div>
+    </div>
+    <div id="collection-list"></div>
+  </div>
+
+  <nav>
+    <button class="active" onclick="showPage('home',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      ホーム
+    </button>
+    <button onclick="showPage('record',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      記録
+    </button>
+    <button onclick="showPage('gacha',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
+      ガチャ
+    </button>
+    <button onclick="showPage('collection',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      図鑑
+    </button>
+  </nav>
+</div>
+
+<div class="modal-bg" id="modal" style="display:none" onclick="closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div id="modal-content"></div>
+    <button class="btn btn-gray" style="width:100%;margin-top:16px" onclick="closeModal()">閉じる</button>
+  </div>
+</div>
+
+<script>
+var CHARS = [
+  {id:'engyu',      name:'エンギュウ',    food:'松阪牛A5',           rank:'S', body:'blob',  bc:'#8b0000', ac:'#ff4500', eyes:'gem',  mouth:'fang',    cheeks:false, acc:'epicrown', accDetail:'#ffd700', fx:'fire'},
+  {id:'truffon',    name:'トリュフォン',  food:'黒トリュフ最高級',   rank:'S', body:'round', bc:'#1a1a1a', ac:'#6d4c41', eyes:'gem',  mouth:'smirk',   cheeks:false, acc:'epicrown', accDetail:'#a1887f', fx:'dark'},
+  {id:'alba',       name:'アルバ',        food:'白トリュフ最高級',   rank:'S', body:'round', bc:'#f5f5f5', ac:'#bdbdbd', eyes:'gem',  mouth:'smile',   cheeks:false, acc:'epicrown', accDetail:'#ffffff', fx:'glow'},
+  {id:'beluga',     name:'ベルーガ',      food:'ベルーガキャビア',   rank:'S', body:'round', bc:'#0a0a1a', ac:'#4a90d9', eyes:'gem',  mouth:'smirk',   cheeks:false, acc:'epicrown', accDetail:'#4a90d9', fx:'dark'},
+  {id:'foagras',    name:'フォアグラス',  food:'フォアグラ最高級',   rank:'S', body:'oval',  bc:'#b8860b', ac:'#ffd700', eyes:'gem',  mouth:'smile',   cheeks:false, acc:'epicrown', accDetail:'#ffd700', fx:'glow'},
+  {id:'unagion',    name:'ウナギオン',    food:'天然ウナギ',         rank:'S', body:'bean',  bc:'#1a237e', ac:'#4fc3f7', eyes:'gem',  mouth:'fang',    cheeks:false, acc:'epicrown', accDetail:'#4fc3f7', fx:'lightning'},
+  {id:'gastrorm',   name:'ガストロム',    food:'幻の高級フルコース', rank:'S', body:'round', bc:'#4a148c', ac:'#ce93d8', eyes:'gem',  mouth:'smirk',   cheeks:false, acc:'epicrown', accDetail:'#ffd700', fx:'rainbow'},
+  {id:'edomae',     name:'江戸前寿司将',  food:'高級寿司',           rank:'A', body:'sushi', bc:'#fff9c4', ac:'#e53935', eyes:'star', mouth:'smile',   cheeks:false, acc:'genhat',  accDetail:'#1a1a2e', fx:'aura'},
+  {id:'kobegyu',    name:'神戸牛騎士',    food:'神戸牛',             rank:'A', body:'blob',  bc:'#4e342e', ac:'#d4a85a', eyes:'star', mouth:'smirk',   cheeks:false, acc:'crown',   accDetail:'#ffd700', fx:'aura'},
+  {id:'iseebi',     name:'伊勢海老将軍',  food:'伊勢海老',           rank:'A', body:'blob',  bc:'#e53935', ac:'#ffd700', eyes:'star', mouth:'line',    cheeks:false, acc:'genhat',  accDetail:'#ffd700', fx:'aura'},
+  {id:'kegani',     name:'毛蟹大将',      food:'毛ガニ',             rank:'A', body:'crab',  bc:'#e53935', ac:'#b71c1c', eyes:'star', mouth:'smirk',   cheeks:false, acc:'genhat',  accDetail:'#ffd700', fx:'aura'},
+  {id:'fukahire',   name:'フカヒレ公',    food:'フカヒレスープ',     rank:'A', body:'oval',  bc:'#1565c0', ac:'#82b1ff', eyes:'star', mouth:'smile',   cheeks:false, acc:'crown',   accDetail:'#ffd700', fx:'aura'},
+  {id:'truffe',     name:'トリュフ卿',    food:'トリュフ料理',       rank:'A', body:'round', bc:'#212121', ac:'#a1887f', eyes:'star', mouth:'smirk',   cheeks:false, acc:'crown',   accDetail:'#8d6e3e', fx:'aura'},
+  {id:'uni',        name:'ウニ大臣',      food:'生ウニ',             rank:'A', body:'blob',  bc:'#ff8f00', ac:'#ffd700', eyes:'star', mouth:'smile',   cheeks:true,  acc:'crown',   accDetail:'#ffd700', fx:'aura'},
+  {id:'caviar_ko',  name:'キャビア侯',    food:'キャビア',           rank:'A', body:'round', bc:'#1a1a1a', ac:'#4a90d9', eyes:'star', mouth:'smirk',   cheeks:false, acc:'crown',   accDetail:'#4a90d9', fx:'aura'},
+  {id:'foie_haku',  name:'フォワグラ伯',  food:'フォアグラ',         rank:'A', body:'oval',  bc:'#fff8e1', ac:'#d4a85a', eyes:'star', mouth:'smile',   cheeks:false, acc:'crown',   accDetail:'#d4a85a', fx:'aura'},
+  {id:'awabi',      name:'鮑の将',        food:'アワビ',             rank:'A', body:'shell', bc:'#80cbc4', ac:'#00897b', eyes:'star', mouth:'smile',   cheeks:false, acc:'genhat',  accDetail:'#ffd700', fx:'aura'},
+  {id:'kuroge',     name:'黒毛和牛将',    food:'黒毛和牛',           rank:'A', body:'blob',  bc:'#212121', ac:'#ffd700', eyes:'star', mouth:'smirk',   cheeks:false, acc:'genhat',  accDetail:'#ffd700', fx:'aura'},
+  {id:'champagne',  name:'シャンパン騎士',food:'シャンパンディナー', rank:'A', body:'round', bc:'#fff176', ac:'#f9a825', eyes:'star', mouth:'smile',   cheeks:true,  acc:'crown',   accDetail:'#ffd700', fx:'aura'},
+  {id:'hokkaido',   name:'北海道帝',      food:'北海道産ズワイガニ', rank:'A', body:'crab',  bc:'#90caf9', ac:'#b3e5fc', eyes:'star', mouth:'line',    cheeks:false, acc:'crown',   accDetail:'#b3e5fc', fx:'aura'},
+  {id:'kinmedai',   name:'金目鯛将',      food:'金目鯛の煮付け',     rank:'A', body:'fish',  bc:'#e53935', ac:'#ffd700', eyes:'star', mouth:'line',    cheeks:false, acc:'genhat',  accDetail:'#ffd700', fx:'aura'},
+  {id:'shirotruffe',name:'白トリュフ卿',  food:'白トリュフ',         rank:'A', body:'round', bc:'#f5f5f5', ac:'#e0e0e0', eyes:'star', mouth:'smile',   cheeks:false, acc:'crown',   accDetail:'#ffffff', fx:'aura'},
+  {id:'pizza',      name:'ピザ騎士',      food:'ピザ',               rank:'B', body:'tri',   bc:'#f9a825', ac:'#e65100', eyes:'oval', mouth:'smile',   cheeks:false, acc:'helmet',  accDetail:'#607d8b', fx:'none'},
+  {id:'yakiniku',   name:'焼肉の徒',      food:'焼肉',               rank:'B', body:'blob',  bc:'#c62828', ac:'#4e342e', eyes:'angry',mouth:'smirk',   cheeks:false, acc:'headband',accDetail:'炎',      fx:'none'},
+  {id:'pasta',      name:'パスタ剣士',    food:'パスタ',             rank:'B', body:'blob',  bc:'#fff9c4', ac:'#d4a85a', eyes:'angry',mouth:'line',    cheeks:false, acc:'helmet',  accDetail:'#78909c', fx:'none'},
+  {id:'kaiten',     name:'寿司見習い',    food:'回転寿司',           rank:'B', body:'sushi', bc:'#f5f5f5', ac:'#e53935', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'headband',accDetail:'修',      fx:'none'},
+  {id:'steak',      name:'ステーキ兵',    food:'ステーキ',           rank:'B', body:'blob',  bc:'#6d4c41', ac:'#3e2723', eyes:'angry',mouth:'line',    cheeks:false, acc:'helmet',  accDetail:'#546e7a', fx:'none'},
+  {id:'shabu',      name:'しゃぶしゃぶ士',food:'しゃぶしゃぶ',      rank:'B', body:'round', bc:'#ff8a80', ac:'#e53935', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'helmet',  accDetail:'#90a4ae', fx:'none'},
+  {id:'kanican',    name:'カニ爪戦士',    food:'カニ缶',             rank:'B', body:'crab',  bc:'#e53935', ac:'#b71c1c', eyes:'angry',mouth:'smirk',   cheeks:false, acc:'helmet',  accDetail:'#7b1fa2', fx:'none'},
+  {id:'unajyu',     name:'ウナ重見習い',  food:'うな重',             rank:'B', body:'rect',  bc:'#5d4037', ac:'#3e2723', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'headband',accDetail:'修',      fx:'none'},
+  {id:'tendon',     name:'天丼武者',      food:'天丼',               rank:'B', body:'blob',  bc:'#f57c00', ac:'#e65100', eyes:'angry',mouth:'line',    cheeks:false, acc:'helmet',  accDetail:'#795548', fx:'none'},
+  {id:'sukiyaki',   name:'すき焼き兵',    food:'すき焼き',           rank:'B', body:'blob',  bc:'#4e342e', ac:'#3e2723', eyes:'angry',mouth:'smirk',   cheeks:false, acc:'helmet',  accDetail:'#37474f', fx:'none'},
+  {id:'gratin',     name:'グラタン戦士',  food:'グラタン',           rank:'B', body:'round', bc:'#fff9c4', ac:'#8d6e3e', eyes:'oval', mouth:'smile',   cheeks:false, acc:'helmet',  accDetail:'#90a4ae', fx:'none'},
+  {id:'risotto',    name:'リゾット士',    food:'リゾット',           rank:'B', body:'round', bc:'#fff8e1', ac:'#d4a85a', eyes:'oval', mouth:'smile',   cheeks:false, acc:'helmet',  accDetail:'#a1887f', fx:'none'},
+  {id:'thai',       name:'タイ料理兵',    food:'タイカレー',         rank:'B', body:'round', bc:'#ff8f00', ac:'#e65100', eyes:'angry',mouth:'smirk',   cheeks:false, acc:'helmet',  accDetail:'#33691e', fx:'none'},
+  {id:'indian',     name:'インド武者',    food:'バターチキンカレー', rank:'B', body:'round', bc:'#ff7043', ac:'#bf360c', eyes:'angry',mouth:'smirk',   cheeks:false, acc:'helmet',  accDetail:'#ff8f00', fx:'none'},
+  {id:'taiwan',     name:'台湾戦士',      food:'台湾ラーメン',       rank:'B', body:'round', bc:'#e53935', ac:'#b71c1c', eyes:'angry',mouth:'fang',    cheeks:false, acc:'helmet',  accDetail:'#1a1a1a', fx:'none'},
+  {id:'peking',     name:'北京兵',        food:'北京ダック',         rank:'B', body:'oval',  bc:'#6d4c41', ac:'#3e2723', eyes:'angry',mouth:'line',    cheeks:false, acc:'helmet',  accDetail:'#e53935', fx:'none'},
+  {id:'fondue',     name:'チーズ戦士',    food:'チーズフォンデュ',   rank:'B', body:'round', bc:'#fff176', ac:'#f9a825', eyes:'oval', mouth:'smile',   cheeks:false, acc:'helmet',  accDetail:'#ffd700', fx:'none'},
+  {id:'moule',      name:'ムール貝士',    food:'ムール貝',           rank:'B', body:'shell', bc:'#1a237e', ac:'#0d47a1', eyes:'angry',mouth:'line',    cheeks:false, acc:'helmet',  accDetail:'#546e7a', fx:'none'},
+  {id:'lamb',       name:'ラム肉武者',    food:'ジンギスカン',       rank:'B', body:'blob',  bc:'#8d6e3e', ac:'#4e342e', eyes:'angry',mouth:'smirk',   cheeks:false, acc:'helmet',  accDetail:'#795548', fx:'none'},
+  {id:'kaki',       name:'牡蠣の兵',      food:'牡蠣',               rank:'B', body:'shell', bc:'#607d8b', ac:'#37474f', eyes:'angry',mouth:'line',    cheeks:false, acc:'helmet',  accDetail:'#546e7a', fx:'none'},
+  {id:'onigiri',    name:'おにぎり将',    food:'具入りおにぎり',     rank:'C', body:'tri',   bc:'#f5f5f5', ac:'#1a1a1a', eyes:'dot',  mouth:'line',    cheeks:false, acc:'headband',accDetail:'必勝',    fx:'none'},
+  {id:'udon',       name:'うどん太郎',    food:'うどん',             rank:'C', body:'cup',   bc:'#fff9e7', ac:'#d4a85a', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'cap',     accDetail:'#d4a85a', fx:'none'},
+  {id:'sobanoke',   name:'そばの介',      food:'そば',               rank:'C', body:'cup',   bc:'#6d4c41', ac:'#bcaaa4', eyes:'oval', mouth:'smile',   cheeks:false, acc:'cap',     accDetail:'#4e342e', fx:'none'},
+  {id:'gyoza',      name:'餃子丸',        food:'餃子',               rank:'C', body:'shell', bc:'#fff8e1', ac:'#d4a85a', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'sunglasses',accDetail:'',     fx:'none'},
+  {id:'currybo',    name:'カレーぼう',    food:'カレーライス',       rank:'C', body:'round', bc:'#f9a825', ac:'#e65100', eyes:'oval', mouth:'bigsmile',cheeks:true,  acc:'beret',   accDetail:'#e65100', fx:'none'},
+  {id:'karaage',    name:'唐揚げ番長',    food:'から揚げ',           rank:'C', body:'blob',  bc:'#d4822a', ac:'#7b4a1a', eyes:'angry',mouth:'smirk',   cheeks:false, acc:'sunglasses',accDetail:'',     fx:'none'},
+  {id:'hamburg',    name:'ハンバーグン',  food:'ハンバーグ',         rank:'C', body:'oval',  bc:'#6d4c41', ac:'#3e2723', eyes:'oval', mouth:'bigsmile',cheeks:true,  acc:'headband',accDetail:'肉',      fx:'none'},
+  {id:'ramensamurai',name:'ラーメン侍',   food:'醤油ラーメン',       rank:'C', body:'cup',   bc:'#e53935', ac:'#b71c1c', eyes:'angry',mouth:'line',    cheeks:false, acc:'headband',accDetail:'侍',      fx:'none'},
+  {id:'chahan',     name:'チャーハン王',  food:'チャーハン',         rank:'C', body:'round', bc:'#d4a85a', ac:'#8d6e3e', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'cap',     accDetail:'#8d6e3e', fx:'none'},
+  {id:'yakisoba',   name:'焼きそば師',    food:'焼きそば',           rank:'C', body:'blob',  bc:'#5d4037', ac:'#3e2723', eyes:'oval', mouth:'smile',   cheeks:false, acc:'cap',     accDetail:'#37474f', fx:'none'},
+  {id:'croquette',  name:'コロッケん',    food:'コロッケ',           rank:'C', body:'blob',  bc:'#d4822a', ac:'#8d6e3e', eyes:'oval', mouth:'bigsmile',cheeks:true,  acc:'cap',     accDetail:'#ff8f00', fx:'none'},
+  {id:'tempura',    name:'天ぷら丸',      food:'天ぷら',             rank:'C', body:'blob',  bc:'#ffe082', ac:'#f9a825', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'cap',     accDetail:'#ffffff', fx:'none'},
+  {id:'sandwich',   name:'サンドイッチ君',food:'サンドイッチ',       rank:'C', body:'rect',  bc:'#fff9c4', ac:'#8bc34a', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'cap',     accDetail:'#8bc34a', fx:'none'},
+  {id:'takoyaki',   name:'たこ焼き丸',    food:'たこ焼き',           rank:'C', body:'round', bc:'#5d4037', ac:'#1a1a1a', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'headband',accDetail:'!',       fx:'none'},
+  {id:'okonomiyaki',name:'お好み将',      food:'お好み焼き',         rank:'C', body:'round', bc:'#d4822a', ac:'#1a1a1a', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'headband',accDetail:'大',      fx:'none'},
+  {id:'chicken',    name:'チキン南蛮',    food:'チキン南蛮',         rank:'C', body:'blob',  bc:'#e65100', ac:'#bf360c', eyes:'oval', mouth:'bigsmile',cheeks:true,  acc:'sunglasses',accDetail:'',     fx:'none'},
+  {id:'tonjiru',    name:'豚汁ぼん',      food:'豚汁',               rank:'C', body:'cup',   bc:'#a1887f', ac:'#5d4037', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'headband',accDetail:'汁',      fx:'none'},
+  {id:'nimono',     name:'煮物師',        food:'筑前煮',             rank:'C', body:'blob',  bc:'#6d4c41', ac:'#4e342e', eyes:'oval', mouth:'smile',   cheeks:false, acc:'cap',     accDetail:'#4e342e', fx:'none'},
+  {id:'nikujaga',   name:'肉じゃが将',    food:'肉じゃが',           rank:'C', body:'blob',  bc:'#5d4037', ac:'#3e2723', eyes:'angry',mouth:'line',    cheeks:false, acc:'headband',accDetail:'将',      fx:'none'},
+  {id:'yakizakana', name:'焼き魚の介',    food:'焼き鮭',             rank:'C', body:'fish',  bc:'#ff8a65', ac:'#bf360c', eyes:'oval', mouth:'smile',   cheeks:false, acc:'sunglasses',accDetail:'',     fx:'none'},
+  {id:'omurice',    name:'オムライス君',  food:'オムライス',         rank:'C', body:'oval',  bc:'#ffee58', ac:'#f9a825', eyes:'oval', mouth:'bigsmile',cheeks:true,  acc:'beret',   accDetail:'#e53935', fx:'none'},
+  {id:'pizzaman',   name:'ピザまん',      food:'ピザまん',           rank:'C', body:'round', bc:'#f5f5f0', ac:'#e53935', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'cap',     accDetail:'#e53935', fx:'none'},
+  {id:'harumaki',   name:'春巻き丸',      food:'春巻き',             rank:'C', body:'rect',  bc:'#d4822a', ac:'#7b4a1a', eyes:'oval', mouth:'smile',   cheeks:false, acc:'cap',     accDetail:'#33691e', fx:'none'},
+  {id:'mushitori',  name:'蒸し鶏将',      food:'蒸し鶏',             rank:'C', body:'oval',  bc:'#f5f5f0', ac:'#9e9e9e', eyes:'oval', mouth:'smile',   cheeks:true,  acc:'headband',accDetail:'蒸',      fx:'none'},
+  {id:'hiyayakko',  name:'冷奴の介',      food:'冷奴',               rank:'C', body:'rect',  bc:'#e8f4fd', ac:'#1565c0', eyes:'oval', mouth:'smile',   cheeks:false, acc:'sunglasses',accDetail:'',     fx:'none'},
+  {id:'panta',      name:'パン太',        food:'食パン',             rank:'D', body:'rect',  bc:'#f5deb3', ac:'#d4a85a', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'moyashi',    name:'モヤシロウ',    food:'もやし',             rank:'D', body:'bean',  bc:'#c8e6c9', ac:'#66bb6a', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'tamagon',    name:'タマゴン',      food:'卵',                 rank:'D', body:'round', bc:'#fff9c4', ac:'#f9a825', eyes:'dot',  mouth:'bigsmile',cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'shiomusubi', name:'シオむすび',    food:'塩おにぎり',         rank:'D', body:'tri',   bc:'#f5f5f5', ac:'#bdbdbd', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'chikuwa',    name:'ちくわ丸',      food:'ちくわ',             rank:'D', body:'bean',  bc:'#d4a86a', ac:'#8d6e3e', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'cupjiro',    name:'カップ次郎',    food:'カップラーメン',     rank:'D', body:'cup',   bc:'#ffffff', ac:'#e53935', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'umebon',     name:'ウメぼん',      food:'梅干し',             rank:'D', body:'round', bc:'#ef9a9a', ac:'#c62828', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'kabeta',     name:'キャベ太',      food:'キャベツ',           rank:'D', body:'round', bc:'#a5d6a7', ac:'#388e3c', eyes:'dot',  mouth:'bigsmile',cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'tofusuke',   name:'トーフスケ',    food:'豆腐',               rank:'D', body:'rect',  bc:'#f5f5f0', ac:'#9e9e9e', eyes:'dot',  mouth:'smile',   cheeks:false, acc:'none', accDetail:'', fx:'none'},
+  {id:'furikake',   name:'ふりかけ丸',    food:'ふりかけ',           rank:'D', body:'round', bc:'#ff8a65', ac:'#bf360c', eyes:'dot',  mouth:'bigsmile',cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'soseji',     name:'ソーセじ',      food:'ソーセージ',         rank:'D', body:'bean',  bc:'#f48fb1', ac:'#c2185b', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'satsumaimo', name:'サツマイモン',  food:'さつまいも',         rank:'D', body:'bean',  bc:'#ce93d8', ac:'#7b1fa2', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'insuta',     name:'インスタくん',  food:'インスタント味噌汁', rank:'D', body:'cup',   bc:'#fff9c4', ac:'#ff8f00', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'potetaro',   name:'ポテ太郎',      food:'じゃがいも',         rank:'D', body:'blob',  bc:'#d4b483', ac:'#8d6e3e', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'ninjinbo',   name:'ニンジン坊',    food:'にんじん',           rank:'D', body:'bean',  bc:'#ff8a65', ac:'#e64a19', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'shirasu',    name:'シラスけ',      food:'しらす',             rank:'D', body:'round', bc:'#eceff1', ac:'#90a4ae', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'maruchan',   name:'マルちゃん',    food:'袋麺',               rank:'D', body:'round', bc:'#ffe082', ac:'#f9a825', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'natto',      name:'ナットウ丸',    food:'納豆',               rank:'D', body:'round', bc:'#a1887f', ac:'#4e342e', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'kombu',      name:'コンブえもん',  food:'昆布',               rank:'D', body:'bean',  bc:'#33691e', ac:'#1b5e20', eyes:'dot',  mouth:'smile',   cheeks:false, acc:'none', accDetail:'', fx:'none'},
+  {id:'takuan',     name:'タクあん',      food:'たくあん',           rank:'D', body:'can',   bc:'#f9a825', ac:'#f57f17', eyes:'dot',  mouth:'bigsmile',cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'sabacan',    name:'サバ缶助',      food:'サバ缶',             rank:'D', body:'can',   bc:'#90a4ae', ac:'#37474f', eyes:'dot',  mouth:'smile',   cheeks:false, acc:'none', accDetail:'', fx:'none'},
+  {id:'tunacan',    name:'ツナ缶丸',      food:'ツナ缶',             rank:'D', body:'can',   bc:'#ffccbc', ac:'#e64a19', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'mochita',    name:'モチ太',        food:'切り餅',             rank:'D', body:'rect',  bc:'#fce4ec', ac:'#f48fb1', eyes:'dot',  mouth:'bigsmile',cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'wakame',     name:'わかめ坊',      food:'わかめ',             rank:'D', body:'blob',  bc:'#1b5e20', ac:'#0d3b0f', eyes:'dot',  mouth:'smile',   cheeks:false, acc:'none', accDetail:'', fx:'none'},
+  {id:'horenso',    name:'ホウレン草丸',  food:'ほうれん草',         rank:'D', body:'blob',  bc:'#2e7d32', ac:'#1b5e20', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'goma',       name:'ゴマすけ',      food:'ごま',               rank:'D', body:'round', bc:'#212121', ac:'#757575', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'kamaboko',   name:'カマぼこん',    food:'かまぼこ',           rank:'D', body:'shell', bc:'#f5f5f5', ac:'#e91e63', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'tarako',     name:'タラこ丸',      food:'たらこ',             rank:'D', body:'round', bc:'#f48fb1', ac:'#ad1457', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'shake',      name:'シャケべえ',    food:'鮭フレーク',         rank:'D', body:'round', bc:'#ff8a65', ac:'#bf360c', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'mayo',       name:'マヨすけ',      food:'マヨネーズ',         rank:'D', body:'round', bc:'#fffde7', ac:'#f9a825', eyes:'dot',  mouth:'bigsmile',cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'ketchup',    name:'ケチゃぷん',    food:'ケチャップ',         rank:'D', body:'round', bc:'#ef5350', ac:'#b71c1c', eyes:'dot',  mouth:'smile',   cheeks:true,  acc:'none', accDetail:'', fx:'none'},
+  {id:'konnyaku',   name:'こんにゃくん',  food:'こんにゃく',         rank:'D', body:'rect',  bc:'#616161', ac:'#212121', eyes:'dot',  mouth:'line',    cheeks:false, acc:'none', accDetail:'', fx:'none'},
+  {id:'mozuku',     name:'もずくん',      food:'もずく',             rank:'D', body:'blob',  bc:'#5d4037', ac:'#3e2723', eyes:'dot',  mouth:'smile',   cheeks:false, acc:'none', accDetail:'', fx:'none'},
+];
+
+var ADVICE = [
+  {icon:'&#x1F4AA;', text:'食事の15分前に水を1杯飲むと、食べすぎを防ぎやすくなります。'},
+  {icon:'&#x1F35A;', text:'朝食を抜くと昼食の食べすぎにつながりやすいです。軽くても食べましょう！'},
+  {icon:'&#x1F6B6;', text:'エレベーターより階段を使うだけで消費カロリーが増えます。'},
+  {icon:'&#x1F952;', text:'野菜から先に食べると血糖値の急上昇を防いでくれます。'},
+  {icon:'&#x23F0;', text:'夜9時以降の食事は脂肪になりやすいです。早めの夕食を心がけましょう。'},
+  {icon:'&#x1F634;', text:'睡眠不足は食欲を増加させるホルモンを増やします。7時間の睡眠を目指して！'},
+  {icon:'&#x1F9C0;', text:'タンパク質を多めに摂ると満腹感が長続きします。卵・豆腐・鶏胸肉がおすすめ。'},
+  {icon:'&#x1F6BD;', text:'水分不足のとき、脳は空腹と勘違いすることがあります。まず水を飲んでみて。'},
+  {icon:'&#x1F37D;', text:'よく噛んで食べると満腹中枢が刺激され、食べすぎを防げます。'},
+  {icon:'&#x1F4C5;', text:'週3回30分のウォーキングで基礎代謝が上がってきます。継続が大事！'},
+  {icon:'&#x1F9A0;', text:'腸内環境を整えると代謝がよくなります。ヨーグルトや納豆を習慣に。'},
+  {icon:'&#x2615;', text:'緑茶や烏龍茶には脂肪燃焼をサポートする成分が含まれています。'},
+];
+
+
+// ===== SVGジェネレーター =====
+function getFaceCenter(body){switch(body){case 'tri':return{x:50,y:70};case 'cup':return{x:50,y:62};case 'can':return{x:50,y:60};case 'sushi':return{x:50,y:64};case 'shell':return{x:50,y:62};case 'oval':return{x:50,y:66};case 'bean':return{x:50,y:62};case 'fish':return{x:46,y:62};case 'crab':return{x:50,y:65};default:return{x:50,y:62};}}
+function drawBody(c){var bc=c.bc,ac=c.ac;switch(c.body){case 'round':return '<ellipse cx="50" cy="62" rx="26" ry="24" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/>';case 'rect':return '<rect x="18" y="40" width="64" height="48" rx="12" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/>';case 'tri':return '<path d="M50,32 L84,94 L16,94 Z" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5" stroke-linejoin="round"/>';case 'blob':return '<path d="M50,38 C65,36 80,46 80,62 C80,77 66,86 50,86 C34,86 20,77 20,62 C20,46 35,40 50,38 Z" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/>';case 'bean':return '<ellipse cx="50" cy="62" rx="20" ry="28" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/>';case 'cup':return '<path d="M24,44 L76,44 L70,92 L30,92 Z" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/><rect x="22" y="40" width="56" height="8" rx="4" fill="'+ac+'"/>';case 'can':return '<rect x="28" y="38" width="44" height="52" rx="6" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/><ellipse cx="50" cy="38" rx="22" ry="6" fill="'+ac+'"/><ellipse cx="50" cy="90" rx="22" ry="6" fill="'+ac+'"/>';case 'fish':return '<ellipse cx="46" cy="62" rx="24" ry="18" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/><path d="M68,62 L84,50 L84,74 Z" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/>';case 'crab':return '<ellipse cx="50" cy="65" rx="24" ry="18" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/><path d="M27,60 L12,46 L18,56 L10,55 L17,63" fill="none" stroke="'+bc+'" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M73,60 L88,46 L82,56 L90,55 L83,63" fill="none" stroke="'+bc+'" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M27,60 L12,46" fill="none" stroke="'+ac+'" stroke-width="2.5" stroke-linecap="round"/><path d="M73,60 L88,46" fill="none" stroke="'+ac+'" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="46" r="4" fill="'+ac+'"/><circle cx="88" cy="46" r="4" fill="'+ac+'"/>';case 'sushi':return '<rect x="20" y="62" width="60" height="26" rx="6" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/><ellipse cx="50" cy="62" rx="30" ry="10" fill="'+ac+'" stroke="'+ac+'" stroke-width="1"/>';case 'shell':return '<path d="M18,78 Q18,42 50,42 Q82,42 82,78 Z" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/><line x1="50" y1="42" x2="50" y2="78" stroke="'+ac+'" stroke-width="1" opacity="0.4"/><line x1="34" y1="46" x2="26" y2="78" stroke="'+ac+'" stroke-width="1" opacity="0.4"/><line x1="66" y1="46" x2="74" y2="78" stroke="'+ac+'" stroke-width="1" opacity="0.4"/>';case 'oval':return '<ellipse cx="50" cy="66" rx="32" ry="20" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/>';default:return '<ellipse cx="50" cy="62" rx="26" ry="24" fill="'+bc+'" stroke="'+ac+'" stroke-width="1.5"/>';}}
+function drawArms(c){if(c.body==='fish'||c.body==='crab')return '';var f=getFaceCenter(c.body),ay=f.y+6;return '<ellipse cx="16" cy="'+ay+'" rx="8" ry="5" fill="'+c.ac+'" opacity="0.85"/><ellipse cx="84" cy="'+ay+'" rx="8" ry="5" fill="'+c.ac+'" opacity="0.85"/>';}
+function drawLegs(c){if(c.body==='fish'||c.body==='crab'||c.body==='shell')return '';return '<ellipse cx="40" cy="95" rx="7" ry="5" fill="'+c.ac+'" opacity="0.9"/><ellipse cx="60" cy="95" rx="7" ry="5" fill="'+c.ac+'" opacity="0.9"/>';}
+function drawEyes(c,cx,cy){var ey=cy-5,ex1=cx-9,ex2=cx+9;switch(c.eyes){case 'dot':return '<circle cx="'+ex1+'" cy="'+ey+'" r="4.5" fill="#333"/><circle cx="'+ex2+'" cy="'+ey+'" r="4.5" fill="#333"/><circle cx="'+(ex1+1.5)+'" cy="'+(ey-1.5)+'" r="1.5" fill="#fff"/><circle cx="'+(ex2+1.5)+'" cy="'+(ey-1.5)+'" r="1.5" fill="#fff"/>';case 'oval':return '<ellipse cx="'+ex1+'" cy="'+ey+'" rx="4" ry="5.5" fill="#333"/><ellipse cx="'+ex2+'" cy="'+ey+'" rx="4" ry="5.5" fill="#333"/><circle cx="'+(ex1+1.5)+'" cy="'+(ey-2)+'" r="1.5" fill="#fff"/><circle cx="'+(ex2+1.5)+'" cy="'+(ey-2)+'" r="1.5" fill="#fff"/>';case 'angry':return '<circle cx="'+ex1+'" cy="'+ey+'" r="4.5" fill="#333"/><circle cx="'+ex2+'" cy="'+ey+'" r="4.5" fill="#333"/><circle cx="'+(ex1+1)+'" cy="'+(ey-1)+'" r="1.5" fill="#fff"/><circle cx="'+(ex2+1)+'" cy="'+(ey-1)+'" r="1.5" fill="#fff"/><line x1="'+(ex1-6)+'" y1="'+(ey-6)+'" x2="'+(ex1+5)+'" y2="'+(ey-1)+'" stroke="#333" stroke-width="2.5" stroke-linecap="round"/><line x1="'+(ex2+6)+'" y1="'+(ey-6)+'" x2="'+(ex2-5)+'" y2="'+(ey-1)+'" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>';case 'star':return '<circle cx="'+ex1+'" cy="'+ey+'" r="5.5" fill="'+c.ac+'"/><circle cx="'+ex2+'" cy="'+ey+'" r="5.5" fill="'+c.ac+'"/><circle cx="'+ex1+'" cy="'+ey+'" r="2.8" fill="#1a1a1a"/><circle cx="'+ex2+'" cy="'+ey+'" r="2.8" fill="#1a1a1a"/><circle cx="'+(ex1+1)+'" cy="'+(ey-1.5)+'" r="1.8" fill="#ffd700"/><circle cx="'+(ex2+1)+'" cy="'+(ey-1.5)+'" r="1.8" fill="#ffd700"/>';case 'gem':return '<path d="M'+ex1+','+(ey-5)+' L'+(ex1+5)+','+ey+' L'+ex1+','+(ey+5)+' L'+(ex1-5)+','+ey+' Z" fill="'+c.ac+'"/><path d="M'+ex2+','+(ey-5)+' L'+(ex2+5)+','+ey+' L'+ex2+','+(ey+5)+' L'+(ex2-5)+','+ey+' Z" fill="'+c.ac+'"/><path d="M'+ex1+','+(ey-3)+' L'+(ex1+2)+','+ey+' L'+ex1+','+(ey+3)+' L'+(ex1-2)+','+ey+' Z" fill="#fff" opacity="0.45"/><path d="M'+ex2+','+(ey-3)+' L'+(ex2+2)+','+ey+' L'+ex2+','+(ey+3)+' L'+(ex2-2)+','+ey+' Z" fill="#fff" opacity="0.45"/>';default:return '<circle cx="'+ex1+'" cy="'+ey+'" r="4.5" fill="#333"/><circle cx="'+ex2+'" cy="'+ey+'" r="4.5" fill="#333"/>';}}
+function drawMouth(c,cx,cy){var my=cy+8;switch(c.mouth){case 'smile':return '<path d="M'+(cx-9)+','+my+' Q'+cx+','+(my+8)+' '+(cx+9)+','+my+'" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>';case 'bigsmile':return '<path d="M'+(cx-11)+','+(my-2)+' Q'+cx+','+(my+10)+' '+(cx+11)+','+(my-2)+'" fill="#fff" stroke="#333" stroke-width="2" stroke-linecap="round"/>';case 'line':return '<line x1="'+(cx-8)+'" y1="'+(my+2)+'" x2="'+(cx+8)+'" y2="'+(my+2)+'" stroke="#333" stroke-width="2" stroke-linecap="round"/>';case 'smirk':return '<path d="M'+(cx-7)+','+(my+2)+' Q'+(cx+3)+','+(my+9)+' '+(cx+9)+','+my+'" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>';case 'fang':return '<path d="M'+(cx-10)+','+my+' Q'+cx+','+(my+10)+' '+(cx+10)+','+my+'" fill="#fff" stroke="#333" stroke-width="2" stroke-linecap="round"/><line x1="'+(cx-5)+'" y1="'+(my+2)+'" x2="'+(cx-6)+'" y2="'+(my+8)+'" stroke="#fff" stroke-width="3" stroke-linecap="round"/><line x1="'+(cx+5)+'" y1="'+(my+2)+'" x2="'+(cx+6)+'" y2="'+(my+8)+'" stroke="#fff" stroke-width="3" stroke-linecap="round"/>';default:return '<path d="M'+(cx-9)+','+my+' Q'+cx+','+(my+8)+' '+(cx+9)+','+my+'" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>';}}
+function drawCheeks(c,cx,cy){if(!c.cheeks)return '';return '<ellipse cx="'+(cx-13)+'" cy="'+(cy+9)+'" rx="5.5" ry="3.5" fill="#ffb3c1" opacity="0.55"/><ellipse cx="'+(cx+13)+'" cy="'+(cy+9)+'" rx="5.5" ry="3.5" fill="#ffb3c1" opacity="0.55"/>';}
+function drawFace(c){var f=getFaceCenter(c.body);return drawEyes(c,f.x,f.y)+drawMouth(c,f.x,f.y)+drawCheeks(c,f.x,f.y);}
+function drawAcc(c){if(c.acc==='none'||!c.acc)return '';var f=getFaceCenter(c.body),headTop=f.y-20;switch(c.acc){case 'headband':var txt=c.accDetail||'';return '<rect x="26" y="'+headTop+'" width="48" height="11" rx="5" fill="#e53935"/><text x="50" y="'+(headTop+9)+'" text-anchor="middle" font-size="7" font-weight="bold" fill="#fff" font-family="sans-serif">'+txt+'</text>';case 'sunglasses':var sy=headTop+14;return '<ellipse cx="40" cy="'+sy+'" rx="10" ry="6.5" fill="#1a1a1a" opacity="0.88"/><ellipse cx="60" cy="'+sy+'" rx="10" ry="6.5" fill="#1a1a1a" opacity="0.88"/><line x1="30" y1="'+sy+'" x2="26" y2="'+(sy+1)+'" stroke="#555" stroke-width="2"/><line x1="70" y1="'+sy+'" x2="74" y2="'+(sy+1)+'" stroke="#555" stroke-width="2"/>';case 'cap':var cc=c.accDetail||'#333';return '<rect x="28" y="'+(headTop-10)+'" width="44" height="16" rx="9" fill="'+cc+'"/><rect x="22" y="'+(headTop+4)+'" width="56" height="6" rx="3" fill="'+cc+'" opacity="0.7"/>';case 'beret':var bc2=c.accDetail||'#c62828';return '<ellipse cx="47" cy="'+(headTop-2)+'" rx="21" ry="12" fill="'+bc2+'"/><circle cx="62" cy="'+(headTop-8)+'" r="5" fill="'+bc2+'" opacity="0.8"/><ellipse cx="50" cy="'+(headTop+9)+'" rx="24" ry="5" fill="'+bc2+'" opacity="0.45"/>';case 'helmet':var hc=c.accDetail||'#607d8b';return '<ellipse cx="50" cy="'+(headTop+2)+'" rx="23" ry="17" fill="'+hc+'"/><rect x="33" y="'+(headTop+12)+'" width="34" height="8" rx="3" fill="'+hc+'" opacity="0.75"/><rect x="38" y="'+(headTop-4)+'" width="24" height="5" rx="2" fill="#90a4ae"/><ellipse cx="50" cy="'+(headTop-12)+'" rx="11" ry="6" fill="'+hc+'" opacity="0.8"/>';case 'genhat':var gc=c.accDetail||'#1a1a2e';return '<path d="M28,'+(headTop+8)+' L50,'+(headTop-14)+' L72,'+(headTop+8)+' Z" fill="'+gc+'"/><rect x="24" y="'+(headTop+6)+'" width="52" height="8" rx="4" fill="'+gc+'" opacity="0.9"/><circle cx="50" cy="'+(headTop-11)+'" r="5" fill="#ffd700"/>';case 'crown':var cd=c.accDetail||'#ffd700';return '<path d="M30,'+(headTop+6)+' L34,'+(headTop-8)+' L42,'+(headTop+2)+' L50,'+(headTop-14)+' L58,'+(headTop+2)+' L66,'+(headTop-8)+' L70,'+(headTop+6)+' Z" fill="'+cd+'"/><rect x="28" y="'+(headTop+4)+'" width="44" height="8" rx="4" fill="'+cd+'" opacity="0.85"/><circle cx="42" cy="'+(headTop-2)+'" r="3.5" fill="#e53935"/><circle cx="50" cy="'+(headTop-9)+'" r="3.5" fill="#42a5f5"/><circle cx="58" cy="'+(headTop-2)+'" r="3.5" fill="#66bb6a"/>';case 'epicrown':var ec=c.accDetail||'#ffd700';return '<path d="M22,'+(headTop+8)+' L28,'+(headTop-10)+' L36,'+(headTop+2)+' L44,'+(headTop-16)+' L50,'+(headTop+2)+' L56,'+(headTop-16)+' L64,'+(headTop+2)+' L72,'+(headTop-10)+' L78,'+(headTop+8)+' Z" fill="'+ec+'"/><rect x="20" y="'+(headTop+6)+'" width="60" height="9" rx="4" fill="'+ec+'" opacity="0.9"/><circle cx="36" cy="'+(headTop-3)+'" r="3.5" fill="#e53935"/><circle cx="44" cy="'+(headTop-11)+'" r="3.5" fill="#42a5f5"/><circle cx="56" cy="'+(headTop-11)+'" r="3.5" fill="#66bb6a"/><circle cx="64" cy="'+(headTop-3)+'" r="3.5" fill="#ab47bc"/><circle cx="50" cy="'+(headTop-5)+'" r="4" fill="#ff8f00"/>';default:return '';}}
+function drawFX(c){if(c.fx==='none'||!c.fx)return '';switch(c.fx){case 'aura':return '<ellipse cx="50" cy="62" rx="34" ry="32" fill="none" stroke="'+c.ac+'" stroke-width="1.8" stroke-dasharray="5,3" opacity="0.65"/><ellipse cx="50" cy="62" rx="40" ry="38" fill="none" stroke="'+c.ac+'" stroke-width="1.2" stroke-dasharray="4,5" opacity="0.35"/>';case 'fire':return '<path d="M16,80 C10,66 14,52 18,58 C16,46 21,38 26,48 C26,40 30,36 31,48 C34,42 36,50 33,60 C26,58 17,72 16,80 Z" fill="#ff5722" opacity="0.8"/><path d="M84,80 C90,66 86,52 82,58 C84,46 79,38 74,48 C74,40 70,36 69,48 C66,42 64,50 67,60 C74,58 83,72 84,80 Z" fill="#ff5722" opacity="0.8"/><path d="M18,78 C16,68 18,58 22,64 C22,56 25,52 27,60 C29,54 31,62 29,70 Z" fill="#ffa000" opacity="0.7"/><path d="M82,78 C84,68 82,58 78,64 C78,56 75,52 73,60 C71,54 69,62 71,70 Z" fill="#ffa000" opacity="0.7"/>';case 'dark':return '<circle cx="18" cy="28" r="3.5" fill="#7b1fa2" opacity="0.7"/><circle cx="82" cy="32" r="2.5" fill="#9c27b0" opacity="0.6"/><circle cx="14" cy="65" r="3" fill="#6a1b9a" opacity="0.7"/><circle cx="86" cy="70" r="2" fill="#4a148c" opacity="0.65"/><path d="M16,48 L20,43 L16,38 L20,43" fill="'+c.ac+'" opacity="0.7"/><path d="M84,52 L80,47 L84,42 L80,47" fill="'+c.ac+'" opacity="0.7"/>';case 'glow':return '<ellipse cx="50" cy="62" rx="38" ry="36" fill="none" stroke="#fff" stroke-width="4" opacity="0.25"/><ellipse cx="50" cy="62" rx="33" ry="31" fill="none" stroke="#fff" stroke-width="2" opacity="0.2"/><circle cx="20" cy="34" r="2.5" fill="#fff" opacity="0.6"/><circle cx="80" cy="38" r="2" fill="#fff" opacity="0.5"/><circle cx="16" cy="72" r="2" fill="#fff" opacity="0.55"/><circle cx="84" cy="68" r="2.5" fill="#fff" opacity="0.6"/>';case 'lightning':return '<path d="M12,40 L20,58 L15,58 L23,78" fill="none" stroke="#ffd700" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M88,40 L80,58 L85,58 L77,78" fill="none" stroke="#ffd700" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';case 'rainbow':return ['#e53935','#ff9800','#fdd835','#43a047','#1e88e5','#8e24aa'].map(function(col,i){return '<ellipse cx="50" cy="62" rx="'+(26+i*5)+'" ry="'+(24+i*5)+'" fill="none" stroke="'+col+'" stroke-width="1.5" opacity="'+(0.52-i*0.06)+'"/>';}).join('');default:return '';}}
+
+function drawLevelOverlay(lv){
+  if(!lv||lv<10)return '';
+  if(lv>=50)return [
+    '<ellipse cx="50" cy="62" rx="38" ry="36" fill="none" stroke="#ffd700" stroke-width="2" opacity="0.7"/>',
+    '<circle cx="50" cy="26" r="5" fill="#ffd700"/>',
+    '<path d="M44,26 L50,18 L56,26" fill="#ffd700"/>',
+    '<circle cx="18" cy="38" r="2.5" fill="#ffd700" opacity="0.9"/>',
+    '<circle cx="82" cy="38" r="2.5" fill="#ffd700" opacity="0.9"/>',
+    '<circle cx="14" cy="62" r="2" fill="#ff8f00" opacity="0.8"/>',
+    '<circle cx="86" cy="62" r="2" fill="#ff8f00" opacity="0.8"/>',
+  ].join('');
+  if(lv>=40)return [
+    '<ellipse cx="50" cy="62" rx="36" ry="34" fill="none" stroke="#e53935" stroke-width="1.2" opacity="0.5"/>',
+    '<ellipse cx="50" cy="62" rx="34" ry="32" fill="none" stroke="#ff9800" stroke-width="1" opacity="0.4"/>',
+    '<ellipse cx="50" cy="62" rx="32" ry="30" fill="none" stroke="#fdd835" stroke-width="1" opacity="0.4"/>',
+    '<ellipse cx="50" cy="62" rx="30" ry="28" fill="none" stroke="#43a047" stroke-width="1" opacity="0.4"/>',
+    '<circle cx="16" cy="50" r="2" fill="#e53935" opacity="0.7"/>',
+    '<circle cx="84" cy="50" r="2" fill="#3b82f6" opacity="0.7"/>',
+  ].join('');
+  if(lv>=30)return [
+    '<ellipse cx="50" cy="62" rx="34" ry="32" fill="none" stroke="#ffd700" stroke-width="2" opacity="0.6"/>',
+    '<circle cx="18" cy="44" r="2.5" fill="#ffd700" opacity="0.8"/>',
+    '<circle cx="82" cy="44" r="2.5" fill="#ffd700" opacity="0.8"/>',
+    '<circle cx="16" cy="68" r="2" fill="#ffd700" opacity="0.7"/>',
+    '<circle cx="84" cy="68" r="2" fill="#ffd700" opacity="0.7"/>',
+  ].join('');
+  if(lv>=20)return '<ellipse cx="50" cy="62" rx="33" ry="31" fill="none" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.55"/>';
+  // lv>=10
+  return [
+    '<circle cx="16" cy="48" r="2" fill="#ffd700" opacity="0.8"/>',
+    '<circle cx="84" cy="48" r="2" fill="#ffd700" opacity="0.8"/>',
+    '<circle cx="50" cy="28" r="2" fill="#ffd700" opacity="0.7"/>',
+  ].join('');
+}
+function makeSVG(c,w,h,lv){w=w||80;h=h||96;var isS=c.rank==='S';var parts=[];if(isS)parts.push('<rect width="100" height="120" fill="#1a1a2e" rx="8"/>');parts.push(drawFX(c));parts.push(drawBody(c));parts.push(drawArms(c));parts.push(drawLegs(c));parts.push(drawFace(c));parts.push(drawAcc(c));parts.push(drawLevelOverlay(lv));return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="'+w+'" height="'+h+'">'+parts.join('')+'</svg>';}
+function charSVG(id,w,h){var c=CHARS.find(function(x){return x.id===id;});if(!c)return silhouetteSVG(w,h);var o=S.owned.find(function(x){return x.id===id;});return makeSVG(c,w,h,o?o.level:1);}
+function silhouetteSVG(w,h){w=w||52;h=h||62;return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="'+w+'" height="'+h+'"><ellipse cx="50" cy="62" rx="26" ry="24" fill="#e2e8f0"/><text x="50" y="70" text-anchor="middle" font-size="24" fill="#94a3b8">?</text></svg>';}
+
+// ===== キャラアドバイスデータ =====
+var CHAR_ADVICE = {
+  // S rank
+  engyu:     '燃え盛る炎のように、今日の脂肪を焼き尽くせ！松阪の神が見ているぞ！',
+  truffon:   '闇に眠る力...カロリーを制する者が体を制する。諦めるな...',
+  alba:      '白き光よ、汝の体を照らさん。一歩一歩の積み重ねが伝説を作る',
+  beluga:    '漆黒の宝石のように...お前の努力は輝きを増している。続けよ',
+  foagras:   '黄金の意志を持て。食の誘惑に勝つ者だけが最高の自分になれる',
+  unagion:   '雷神の速さで代謝を上げろ！毎日の運動が稲妻を呼ぶ！',
+  gastrorm:  '究極の食の神として告げる...今日のダイエット記録は宇宙の法則に刻まれた！',
+  // A rank
+  edomae:    '真の美食家は量より質を知る。少量の旬の食材で心を豊かにせよ',
+  kobegyu:   '良質なタンパク質は筋肉の礎。今日の摂取カロリーを確認されたか？',
+  iseebi:    '海老のアスタキサンチンは強力な抗酸化物質。体の老化を防ぐ海の恵みだ',
+  kegani:    '蟹は低カロリー高タンパク。大将の貫禄を保つ秘訣はこれだ！',
+  fukahire:  'コラーゲン豊富なフカヒレ。肌と関節の健康を保つ高貴な食材なり',
+  truffe:    '香りを楽しむトリュフは少量で満足感が高い。欲張らぬ心が美食の道',
+  uni:       '生ウニの亜鉛は代謝を活性化。旬のものを適量食べることが健康の秘訣',
+  caviar_ko: 'キャビアに含まれるオメガ3は脳と心臓を守る。食は長寿の鍵なり',
+  foie_haku: '節制が美食を輝かせる。フォアグラも少量で十分な幸せをくれる',
+  awabi:     '鮑の肝は滋養強壮に優れている。海の将が保証する自然の力だ',
+  kuroge:    '和牛の良質な脂は体を守る。量を守れば百薬の長となる',
+  champagne: '食事は楽しむもの。たまの贅沢は心の栄養になる。それが美食の騎士道',
+  hokkaido:  '寒冷な大地の幸は良質な脂質を持つ。北の帝が教える食の知恵だ',
+  kinmedai:  '赤い魚には良質な脂質が宿る。週2回の魚食がダイエットの礎となろう',
+  shirotruffe:'食への感謝が食を正しい量にする。白トリュフ卿の教えを胸に刻め',
+  // B rank
+  pizza:     'ピザは食べる前にキッチンペーパーで油を吸い取れ！それが騎士道だ！',
+  yakiniku:  '焼肉は野菜から食べろ！脂の少ない部位を選ぶのが徒の流儀！',
+  pasta:     'アルデンテにこだわれ！よく噛むと満腹感が増す。それが剣士の食べ方だ！',
+  kaiten:    '修行中の身だが教えよう。寿司はシャリのカロリーも計算に入れるべし！',
+  steak:     '赤身ステーキはタンパク質の戦場！ソースを控えれば完璧な兵糧だ！',
+  shabu:     'しゃぶしゃぶは野菜をたっぷり食べるのが極意！ポン酢でさっぱりと！',
+  kanican:   'カニはタンパク質が高くて低脂質！このハサミで掴んだ真実だ！',
+  unajyu:    'うなぎはビタミンE豊富！疲労回復に効く。修行で疲れた体に最適！',
+  tendon:    '天丼は衣の吸油量が多い。野菜天ぷらを選べ、それが武者の知恵だ！',
+  sukiyaki:  'すき焼きの割り下には砂糖が多い！卵をくぐらせてうまみを引き出せ！',
+  gratin:    'グラタンのチーズはカルシウム豊富！ただし量の加減が戦略だ！',
+  risotto:   '水分が多く腹持ちがいいリゾット！少量で満足できるのが士の道！',
+  thai:      'タイのスパイスは脂肪燃焼効果抜群！辛さも戦いの一つだ！',
+  indian:    'カレーのスパイスは代謝を上げる！でもバターやクリームは控えめに！',
+  taiwan:    '台湾ラーメンの辛さは脂肪燃焼を助ける！ただしスープは残せ！',
+  peking:    '北京ダックは皮の脂質が高い。少量で気品ある食べ方が兵の作法だ！',
+  fondue:    'チーズは発酵食品！腸内環境を整えてくれる。でも高脂質注意！',
+  moule:     'ムール貝は鉄分豊富で低カロリー！海の幸で体を養え！',
+  lamb:      'ラムのカルニチンは脂肪燃焼に効果的！これがジンギスカンの秘密だ！',
+  kaki:      '牡蠣は亜鉛豊富で免疫力UP！秋冬に積極的に食べよ！',
+  // C rank
+  onigiri:   '必勝！食事の記録を続けることが勝利への第一歩だ！',
+  udon:      'うどんは消化がいいから胃腸が疲れた時にぴったり。食べ過ぎは禁物！',
+  sobanoke:  '蕎麦はうどんよりGI値が低め！血糖値の急上昇を防いでくれるよ',
+  gyoza:     '餃子は焼きより蒸しの方がヘルシーだよ！皮のカロリーも忘れずに',
+  currybo:   'カレーのスパイスは代謝アップに効果あり！ルーを少なめにするとGOOD！',
+  karaage:   'から揚げは揚げ物でもタンパク質たっぷり。週1くらいが丁度いい！',
+  hamburg:   '豆腐を混ぜてカロリーダウンできるぞ！自家製ハンバーグがオススメ！',
+  ramensamurai:'ラーメンのスープは残すべし！それだけで塩分が大幅カット！',
+  chahan:    'チャーハンは油多め。鶏ガラスープで仕上げると少量の油でもOK！',
+  yakisoba:  '焼きそばに野菜をたっぷり入れることで栄養バランスが整うぞ！',
+  croquette: 'コロッケは揚げ物だけどじゃがいものビタミンC入り。週1の楽しみに！',
+  tempura:   '天ぷらは大根おろしと一緒に食べると消化が助かるよ',
+  sandwich:  '全粒粉パンにするだけで食物繊維がUPするよ！',
+  takoyaki:  'タコのタンパク質は豊富！ただしソースとマヨは程々にね',
+  okonomiyaki:'野菜を多めに入れると栄養バランスが整うぞ！',
+  chicken:   'タルタルソース少なめにするとGOOD！チキンのタンパク質を活かそう',
+  tonjiru:   '豚汁は野菜もタンパク質も摂れるスーパーメニュー！積極的に食べよう',
+  nimono:    '煮物は低カロリーで栄養満点！和食最高！',
+  nikujaga:  '肉じゃがは砂糖を使うから意外とカロリー高め。じゃがいも多めに！',
+  yakizakana:'焼き魚は蒸し料理と並んで最高の調理法！脂質が減ってヘルシーだ',
+  omurice:   'ケチャップ少なめにするとカロリーダウン！卵のタンパク質を活かそう',
+  pizzaman:  'ピザまんは一個で300kcal前後。間食の代わりに一個だけにしてね',
+  harumaki:  '揚げ物でも野菜たっぷりなら栄養満点！選ぶなら野菜春巻きを',
+  mushitori: '蒸し鶏は最高のダイエット食材！サラダのトッピングにバッチリ',
+  hiyayakko: 'カロリーほぼゼロで高タンパク！毎日食べても安心だよ',
+  // D rank
+  panta:     '食パンは意外とカロリーあるよ！ジャムとかバターはほどほどにね',
+  moyashi:   'もやしはカロリーほぼゼロ！でも食事バランスも大事だよ',
+  tamagon:   'たまごはタンパク質の王様！一日2個でしっかり栄養補給しよ',
+  shiomusubi:'塩おにぎりって思ったよりシンプルで低カロリー！コンビニ飯の救世主',
+  chikuwa:   'ちくわは低カロリーでタンパク質も摂れる最強おやつだよ！',
+  cupjiro:   'カップ麺は500kcal前後！塩分多いから頻繁には食べないでね',
+  umebon:    '梅干しには疲労回復効果あり！運動後に1個食べてみて',
+  kabeta:    'キャベツは食べ放題レベルの低カロリー！食事の最初に食べよう',
+  tofusuke:  '豆腐は高タンパク低カロリーの神食材！毎日食べてね',
+  furikake:  'ふりかけでご飯が美味しくなるね！でも塩分には気をつけて',
+  soseji:    'ソーセージは美味しいけど加工肉は食べすぎ注意！たまにならOK',
+  satsumaimo:'さつまいもは食物繊維たっぷり！腸活にピッタリだよ',
+  insuta:    'インスタント食品は手軽だけど添加物多め。たまにならOK！',
+  potetaro:  'じゃがいもはビタミンC豊富！揚げずに蒸して食べるのがオススメ',
+  ninjinbo:  'にんじんのβカロテンは油と一緒に摂ると吸収UP！',
+  shirasu:   'しらすはカルシウムたっぷり！骨を強くしてくれるよ',
+  maruchan:  '袋麺は野菜をたっぷり入れてアレンジしてね！',
+  natto:     '納豆の腸活効果は本物！毎日続けると代謝が上がるよ',
+  kombu:     '昆布はミネラルの宝庫！だしを取るだけでも栄養になるよ',
+  takuan:    'カロリー低めだけど塩分が多いよ！食べすぎには気をつけて',
+  sabacan:   'サバ缶のDHAとEPAは脂肪燃焼をサポートしてくれるぞ！',
+  tunacan:   'ノンオイルを選ぶとヘルシー！サラダによく合うよ',
+  mochita:   'お餅は腹持ちいいけど意外と高カロリー！2個くらいにしてね',
+  wakame:    'わかめはカロリーほぼゼロ！スープに入れるだけで栄養満点',
+  horenso:   'ほうれん草の鉄分は疲れた体に効く！炒めて食べてね',
+  goma:      'ちょっとかけるだけで抗酸化効果大！毎日少しずつかけてみて',
+  kamaboko:  'かまぼこは高タンパク低脂質！おつまみにも最適だよ',
+  tarako:    'タンパク質豊富！ただし塩分多めなので食べすぎ注意',
+  shake:     '鮭のアスタキサンチンは脂肪燃焼を助けてくれるよ！',
+  mayo:      'マヨネーズはカロリー高め！小さじ1杯でも45kcalあるよ',
+  ketchup:   'ケチャップはトマト栄養たっぷり！でも砂糖多いから気をつけて',
+  konnyaku:  'カロリーほぼゼロ！腹持ちいいから置き換えに最適だよ',
+  mozuku:    '食物繊維たっぷり！腸内環境を整えてくれるよ',
+};
+
+// 状況別メッセージ（ランク別トーン）
+function getSituationMsg(c, situation){
+  var rank=c?c.rank:'D';
+  if(situation==='great'){
+    if(rank==='S')return '素晴らしい！その炎のような意志が体を変えていく！';
+    if(rank==='A')return '見事な節制。真の美食家は体の管理も怠らないものだ';
+    if(rank==='B')return '今日の消費カロリー、見事だ！その調子で戦い続けろ！';
+    if(rank==='C')return '今日はダイエット達成！この調子で続けようね！';
+    return '今日はよくできたね！この調子で頑張ろう！';
+  }
+  if(situation==='bad'){
+    if(rank==='S')return '食の誘惑に負けたか...だが明日がある。諦めるな！';
+    if(rank==='A')return '今日は食べすぎたようだが、明日は野菜から食べることを勧める';
+    if(rank==='B')return '食べすぎは戦士の恥ではない！明日の作戦を立て直せ！';
+    if(rank==='C')return '食べすぎちゃったね...明日はリセットしてがんばろう！';
+    return '今日は食べすぎちゃったね。明日は少し気をつけてみて！';
+  }
+  return null;
+}
+
+function getCharAdvice(){
+  var i=intake(),b=S.today.burnedCalories,d=diff();
+  if(!S.owned.length){return {charId:null,text:'ガチャを引いてキャラをゲットしよう！キャラがダイエットアドバイスをくれるよ！',name:'？？？',rankColor:'#94a3b8'};}
+  var sorted=S.owned.slice().sort(function(a,b2){return b2.level-a.level;});
+  var idx=S.adviceIdx%sorted.length;
+  var charId=sorted[idx].id;
+  var c=CHARS.find(function(x){return x.id===charId;});
+  if(!c)return {charId:null,text:'...',name:'?',rankColor:'#94a3b8'};
+  var text=CHAR_ADVICE[charId]||'一緒にダイエット頑張ろう！';
+  if(d>200){var st=getSituationMsg(c,'great');if(st)text=st;}
+  else if(d<-500){var st2=getSituationMsg(c,'bad');if(st2)text=st2;}
+  else if(i===0&&b===0){/* default advice */}
+  else if(b===0){text='消費カロリーがまだ0だよ！軽い散歩でも記録してみよう！';}
+  else if(i===0){text='まだ食事の記録がないよ！食べたものを記録することが第一歩！';}
+  return {charId:charId,text:text,name:c.name,char:c,rankColor:RC[c.rank]};
+}
+
+var CLAUDE_API_KEY = localStorage.getItem('claude_api_key') || '';
+
+function analyzePhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  CLAUDE_API_KEY = localStorage.getItem('claude_api_key') || '';
+  if (!CLAUDE_API_KEY) {
+    var key = prompt('AnthropicのAPIキーを入力してください（初回のみ）:');
+    if (!key) { input.value = ''; return; }
+    localStorage.setItem('claude_api_key', key.trim());
+    CLAUDE_API_KEY = key.trim();
+  }
+  var file = input.files[0];
+  var status = document.getElementById('photo-status');
+  status.style.display = '';
+  status.style.background = '#eff6ff';
+  status.style.color = '#1d4ed8';
+  status.style.border = '1px solid #bfdbfe';
+  status.innerHTML = '&#x23F3; 写真を解析中...';
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result.split(',')[1];
+    var mediaType = file.type || 'image/jpeg';
+
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': CLAUDE_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 256,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: 'この食事の名前とカロリーを推定してください。JSON形式で {"name": "食事名", "calories": 数値} とだけ返してください。カロリーは整数で。' }
+          ]
+        }]
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var text = data.content && data.content[0] && data.content[0].text;
+      if (!text) throw new Error('応答なし');
+      var match = text.match(/\{[^}]+\}/);
+      if (!match) throw new Error('解析失敗');
+      var result = JSON.parse(match[0]);
+      document.getElementById('meal-name').value = result.name || '';
+      document.getElementById('meal-cal').value = result.calories || '';
+      status.style.background = '#f0fdf4';
+      status.style.color = '#15803d';
+      status.style.border = '1px solid #bbf7d0';
+      status.innerHTML = '&#x2705; ' + result.name + '（推定 ' + result.calories + ' kcal）を自動入力しました！';
+      // リセット
+      input.value = '';
+    })
+    .catch(function(err) {
+      status.style.background = '#fff1f2';
+      status.style.color = '#be123c';
+      status.style.border = '1px solid #fecdd3';
+      status.innerHTML = '&#x274C; 解析できませんでした。手動で入力してください。';
+      console.error(err);
+      input.value = '';
+    });
+  };
+  reader.readAsDataURL(file);
+}
+var RC = {D:'#94a3b8',C:'#22c55e',B:'#3b82f6',A:'#a855f7',S:'#f59e0b'};
+var RR = {D:.50,C:.25,B:.15,A:.08,S:.02};
+var RO = ['S','A','B','C','D'];
+
+function today(){ return new Date().toISOString().slice(0,10); }
+function dflt(){ return {today:{date:today(),meals:[],burnedCalories:0},lastGacha:'',owned:[],adviceIdx:0,profile:null,activity:''}; }
+function load(){
+  try{var d=JSON.parse(localStorage.getItem('cal-adv')||'null');
+    if(!d)return dflt();
+    if(d.today.date!==today())d.today={date:today(),meals:[],burnedCalories:0};
+    if(d.adviceIdx===undefined)d.adviceIdx=0;
+    if(d.profile===undefined)d.profile=null;
+    if(d.activity===undefined)d.activity='';
+    return d;
+  }catch(e){return dflt();}
+}
+function save(){localStorage.setItem('cal-adv',JSON.stringify(S));}
+var S=load();
+
+function intake(){return S.today.meals.reduce(function(a,m){return a+m.calories;},0);}
+function diff(){return S.today.burnedCalories-intake();}
+function expNeed(lv){return lv*100;}
+
+function gacha(){
+  var r=Math.random(),acc=0;
+  var ranks=['D','C','B','A','S'];
+  for(var i=0;i<ranks.length;i++){acc+=RR[ranks[i]];if(r<acc){var p=CHARS.filter(function(c){return c.rank===ranks[i];});return p[Math.floor(Math.random()*p.length)];}}
+  return CHARS[0];
+}
+function addExp(g){
+  S.owned=S.owned.map(function(o){var lv=o.level,exp=o.exp+g;while(lv<50&&exp>=expNeed(lv)){exp-=expNeed(lv);lv++;}return Object.assign({},o,{level:lv,exp:exp});});
+}
+
+function getAdvice(){
+  var i=S.intake||intake(), b=S.today.burnedCalories, d=diff();
+  // 状況に応じたアドバイス
+  if(d>200) return {icon:'&#x1F38A;', text:'素晴らしい！今日は'+d+'kcalのマイナスです。この調子でキャラを育てよう！'};
+  if(d<-500) return {icon:'&#x26A0;', text:'今日は食べすぎ気味です。明日は野菜ファーストで食事を始めてみましょう。'};
+  if(i===0 && b===0) return ADVICE[S.adviceIdx % ADVICE.length];
+  if(b===0) return {icon:'&#x1F6B6;', text:'消費カロリーがまだ0です。軽い散歩でも記録してみましょう！'};
+  if(i===0) return {icon:'&#x1F374;', text:'まだ食事の記録がありません。食べたものを記録することが第一歩です。'};
+  return ADVICE[S.adviceIdx % ADVICE.length];
+}
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  renderAll();
+}
+
+function renderAll(){rHome();rRecord();rGacha();rCol();renderTDEE();}
+
+function rHome(){
+  var i=intake(),b=S.today.burnedCalories,d=diff(),di=d>0;
+  document.getElementById('today-date').textContent=S.today.date+' のデータ';
+  document.getElementById('h-intake').textContent=i;
+  document.getElementById('h-burned').textContent=b;
+  var de=document.getElementById('h-diff');de.textContent=(di?'+':'')+d;de.style.color=di?'#16a34a':'#dc2626';
+  var p=Math.min(i/2000*100,100);
+  var hb=document.getElementById('h-bar');hb.style.width=p+'%';hb.style.background=p>90?'#ef4444':p>70?'#f97316':'#22c55e';
+  document.getElementById('h-bar-label').textContent=i+' / 2000 kcal';
+  document.getElementById('gacha-notice').style.display=S.lastGacha!==today()?'':'none';
+  var dn=document.getElementById('diet-notice');
+  if(di){dn.style.display='';dn.textContent='&#x2728; ダイエット達成中！差分 '+d+' kcal がキャラの経験値に！';}else{dn.style.display='none';}
+
+  // アドバイス
+  var adv=getCharAdvice();
+  var advSvgEl=document.getElementById('advice-svg');
+  var advNameEl=document.getElementById('advice-name');
+  if(adv.char){var advOwn=S.owned.find(function(x){return x.id===adv.charId;});advSvgEl.innerHTML=makeSVG(adv.char,60,72,advOwn?advOwn.level:1);}else{advSvgEl.innerHTML='<div style="width:60px;height:72px;background:#f1f5f9;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px">🎲</div>';}
+  advNameEl.innerHTML='<span style="color:'+adv.rankColor+';font-size:11px;font-weight:700">'+(adv.char?adv.char.rank+'ランク ':'')+adv.name+'</span>のアドバイス';
+  document.getElementById('advice-text').textContent=adv.text;
+
+  var top=S.owned.slice().sort(function(a,b){return b.level-a.level;}).slice(0,3);
+  if(!top.length){document.getElementById('home-chars').style.display='none';document.getElementById('home-empty').style.display='';}
+  else{
+    document.getElementById('home-chars').style.display='';document.getElementById('home-empty').style.display='none';
+    document.getElementById('home-char-list').innerHTML=top.map(function(o){
+      var c=CHARS.find(function(x){return x.id===o.id;});if(!c)return '';
+      var pp=Math.min(o.exp/expNeed(o.level)*100,100),col=RC[c.rank];
+      return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">'+
+        '<div style="width:52px;height:52px;border-radius:12px;background:'+col+'18;border:1.5px solid '+col+'50;display:flex;align-items:center;justify-content:center;overflow:hidden">'+makeSVG(c,48,48,o.level)+'</div>'+
+        '<div style="flex:1"><div style="display:flex;justify-content:space-between;font-size:14px"><b>'+c.name+'</b><span style="color:#64748b;font-size:13px">Lv.'+o.level+'</span></div>'+
+        '<div class="bar-wrap" style="height:7px;margin-top:5px"><div class="bar" style="width:'+pp+'%;background:'+col+'"></div></div></div></div>';
+    }).join('');
+  }
+}
+
+function rRecord(){
+  document.getElementById('burned-current').textContent=S.today.burnedCalories;
+  document.getElementById('total-intake-label').textContent=intake()+' kcal';
+  var ml=document.getElementById('meal-list');
+  if(!S.today.meals.length){ml.innerHTML='<div style="text-align:center;color:#cbd5e1;font-size:13px;padding:16px">まだ記録がありません</div>';}
+  else{ml.innerHTML=S.today.meals.map(function(m){
+    return '<div class="meal-item"><div><div style="font-size:14px;font-weight:500;color:#0f172a">'+m.name+'</div><div style="font-size:11px;color:#94a3b8">'+m.time+'</div></div>'+
+      '<div style="display:flex;align-items:center;gap:8px"><span style="color:#f97316;font-weight:700;font-size:14px">'+m.calories+' kcal</span>'+
+      '<button class="del-btn" onclick="rmMeal(\''+m.id+'\')">&#xD7;</button></div></div>';
+  }).join('');}
+}
+
+function rGacha(){
+  var can=S.lastGacha!==today();
+  var btn=document.getElementById('gacha-btn');
+  btn.disabled=!can;btn.textContent=can?'無料ガチャを引く！':'今日はもう引きました。また明日！';
+  document.getElementById('gacha-msg').textContent=can?'今日のガチャが引けます！':'明日また引けます';
+  document.getElementById('rate-table').innerHTML=RO.map(function(r){
+    var col=RC[r],p=RR[r]*100;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0">'+
+      '<span style="font-weight:700;font-size:14px;color:'+col+';width:24px">'+r+'</span>'+
+      '<div style="flex:1;margin:0 8px;background:#f1f5f9;border-radius:999px;height:8px"><div style="height:8px;border-radius:999px;width:'+(p*2)+'%;background:'+col+'"></div></div>'+
+      '<span style="font-size:12px;color:#94a3b8;width:32px;text-align:right">'+p+'%</span></div>';
+  }).join('');
+}
+
+function rCol(){
+  var ids={};S.owned.forEach(function(o){ids[o.id]=true;});
+  document.getElementById('col-count').textContent=Object.keys(ids).length+' / 100';
+  document.getElementById('collection-list').innerHTML=RO.map(function(rank){
+    var chars=CHARS.filter(function(c){return c.rank===rank;}),col=RC[rank];
+    return '<div class="card"><h2 style="color:'+col+'">'+rank+'ランク</h2><div class="char-grid">'+
+      chars.map(function(c){
+        var own=!!ids[c.id],o=S.owned.find(function(x){return x.id===c.id;});
+        return '<div class="char-cell" style="background:'+(own?col+'12':'#f8fafc')+';border-color:'+(own?col+'60':'#e2e8f0')+'" onclick="showDetail(\''+c.id+'\')">'+
+          '<div style="'+(own?'':'filter:grayscale(1) opacity(.35)')+'">'+( own ? makeSVG(c,52,62,o?o.level:1) : silhouetteSVG(52,62) )+'</div>'+
+          '<div style="font-size:9px;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:'+(own?'#0f172a':'#94a3b8')+';font-weight:'+(own?'600':'400')+'">'+(own?c.name:'???')+'</div>'+
+          (o?'<div style="font-size:9px;color:'+col+';font-weight:700">Lv.'+o.level+'</div>':'')+
+          '</div>';
+      }).join('')+'</div></div>';
+  }).join('');
+}
+
+function addMeal(){
+  var n=document.getElementById('meal-name').value.trim(),c=parseInt(document.getElementById('meal-cal').value);
+  if(!n||isNaN(c)||c<=0){alert('食事名とカロリーを入力してください');return;}
+  var t=new Date(),h=String(t.getHours()).padStart(2,'0'),m=String(t.getMinutes()).padStart(2,'0');
+  S.today.meals.push({id:Date.now().toString(),name:n,calories:c,time:h+':'+m});
+  S.adviceIdx=(S.adviceIdx+1)%ADVICE.length;
+  save();renderAll();
+  document.getElementById('meal-name').value='';document.getElementById('meal-cal').value='';
+}
+function rmMeal(id){S.today.meals=S.today.meals.filter(function(m){return m.id!==id;});save();renderAll();}
+function calcTDEE(prof, act){
+  if(!prof||!prof.height||!prof.weight||!prof.age)return 0;
+  var bmr;
+  if(prof.gender==='male') bmr=10*prof.weight+6.25*prof.height-5*prof.age+5;
+  else bmr=10*prof.weight+6.25*prof.height-5*prof.age-161;
+  var mult={low:1.2,mid:1.55,high:1.725};
+  return Math.round(bmr*(mult[act]||1.2));
+}
+
+function saveProfile(){
+  var g=document.getElementById('prof-gender').value;
+  var age=parseInt(document.getElementById('prof-age').value);
+  var h=parseInt(document.getElementById('prof-height').value);
+  var w=parseInt(document.getElementById('prof-weight').value);
+  if(isNaN(age)||isNaN(h)||isNaN(w)){alert('全て入力してください');return;}
+  S.profile={gender:g,age:age,height:h,weight:w};
+  save();
+  var tdee=calcTDEE(S.profile,S.activity||'mid');
+  var mult2={low:1.2,mid:1.55,high:1.725};
+  var bmr2=Math.round(tdee/(mult2[S.activity||'mid']));
+  document.getElementById('prof-result').textContent='基礎代謝: '+bmr2+'kcal / 消費目安: '+tdee+'kcal';
+  renderTDEE();
+}
+
+function setActivity(act){
+  S.activity=act;save();
+  document.querySelectorAll('.act-btn').forEach(function(b){
+    b.style.background=b.dataset.act===act?'#3b82f6':'#f1f5f9';
+    b.style.color=b.dataset.act===act?'#fff':'#334155';
+  });
+  if(S.profile&&S.profile.height){
+    var tdee=calcTDEE(S.profile,act);
+    S.today.burnedCalories=tdee;
+    save();renderAll();
+  }
+  renderTDEE();
+}
+
+function renderTDEE(){
+  var el=document.getElementById('tdee-display');
+  if(!el)return;
+  var prof=S.profile;
+  var act=S.activity||'';
+  if(prof&&prof.height&&act){
+    var tdee=calcTDEE(prof,act);
+    var actLabel={low:'少ない',mid:'中くらい',high:'多い'};
+    el.style.display='';
+    el.innerHTML='&#x1F4CA; '+actLabel[act]+'の活動量で <strong>'+tdee+'kcal</strong> を自動設定しました';
+  } else {
+    el.style.display='none';
+  }
+  // ボタンの色を反映
+  document.querySelectorAll('.act-btn').forEach(function(b){
+    b.style.background=b.dataset.act===act?'#3b82f6':'#f1f5f9';
+    b.style.color=b.dataset.act===act?'#fff':'#334155';
+  });
+  // プロフィール欄に保存値を反映
+  if(prof){
+    var eg=document.getElementById('prof-gender');
+    var ea=document.getElementById('prof-age');
+    var eh=document.getElementById('prof-height');
+    var ew=document.getElementById('prof-weight');
+    if(eg)eg.value=prof.gender||'male';
+    if(ea)ea.value=prof.age||'';
+    if(eh)eh.value=prof.height||'';
+    if(ew)ew.value=prof.weight||'';
+  }
+}
+
+function saveBurned(){
+  var v=parseInt(document.getElementById('burned-input').value);
+  if(isNaN(v)||v<0){alert('0以上の数値を入力してください');return;}
+  S.today.burnedCalories=v;save();renderAll();
+  document.getElementById('burned-input').value='';
+}
+
+function doGacha(){
+  if(S.lastGacha===today())return;
+  document.getElementById('gacha-idle').style.display='none';
+  document.getElementById('gacha-result').style.display='none';
+  document.getElementById('gacha-animating').style.display='';
+  document.getElementById('gacha-btn').disabled=true;
+  setTimeout(function(){
+    var c=gacha(),ex=S.owned.find(function(o){return o.id===c.id;}),isNew=!ex;
+    if(ex){S.owned=S.owned.map(function(o){return o.id===c.id?Object.assign({},o,{count:o.count+1}):o;});}
+    else{S.owned.push({id:c.id,level:1,exp:0,count:1});}
+    var d=diff();if(d>0)addExp(d);
+    S.lastGacha=today();S.adviceIdx=(S.adviceIdx+1)%ADVICE.length;save();
+    var col=RC[c.rank];
+    document.getElementById('gacha-animating').style.display='none';
+    var re=document.getElementById('gacha-result');re.style.display='flex';
+    re.innerHTML=
+      '<div style="width:120px;height:140px;border-radius:20px;overflow:hidden;border:2.5px solid '+col+';'+(c.rank==='S'?'background:#1a1a2e':'background:'+col+'15')+';display:flex;align-items:center;justify-content:center">'+makeSVG(c,110,130,ex?ex.level:1)+'</div>'+
+      '<div class="rank-badge" style="background:'+col+'20;color:'+col+';border:1px solid '+col+'40">'+c.rank+'ランク</div>'+
+      '<div style="font-size:22px;font-weight:800;color:#0f172a">'+c.name+'</div>'+
+      '<div style="font-size:14px;color:#64748b">'+c.food+'</div>'+
+      '<div style="padding:8px 20px;border-radius:12px;font-size:13px;font-weight:600;'+(isNew?'background:#fffbeb;color:#92400e;border:1px solid #fde68a':'background:#f8fafc;color:#94a3b8;border:1px solid #e2e8f0')+'">'+(isNew?'&#x1F31F; NEW！初めてのキャラ！':'すでに持っています')+'</div>';
+    renderAll();
+  },1200);
+}
+
+function showDetail(id){
+  var c=CHARS.find(function(x){return x.id===id;}),o=S.owned.find(function(x){return x.id===id;});
+  if(!c)return;
+  var col=RC[c.rank],own=!!o;
+  var h='<div style="display:flex;gap:16px;align-items:center;margin-bottom:16px">'+
+    '<div style="width:88px;height:100px;border-radius:16px;overflow:hidden;border:2px solid '+col+'50;'+(own&&c.rank==='S'?'background:#1a1a2e':'background:'+col+'15')+';display:flex;align-items:center;justify-content:center">'+
+    (own?makeSVG(c,80,96,o.level):silhouetteSVG(80,96))+'</div><div>'+
+    '<div class="rank-badge" style="background:'+col+'18;color:'+col+';border:1px solid '+col+'40;font-size:11px;padding:3px 10px">'+c.rank+'ランク</div>'+
+    '<div style="font-size:20px;font-weight:800;margin:5px 0;color:#0f172a">'+(own?c.name:'？？？')+'</div>'+
+    '<div style="font-size:13px;color:#64748b">'+(own?c.food:'未入手')+'</div></div></div>';
+  if(o){var pp=Math.min(o.exp/expNeed(o.level)*100,100);
+    h+='<div style="display:flex;justify-content:space-between;font-size:14px;padding:8px 0;border-top:1px solid #f1f5f9"><span style="color:#64748b">レベル</span><b style="color:#0f172a">Lv. '+o.level+' / 50</b></div>'+
+    '<div style="padding:8px 0;border-top:1px solid #f1f5f9"><div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-bottom:5px"><span>経験値</span><span>'+o.exp+' / '+expNeed(o.level)+'</span></div>'+
+    '<div class="bar-wrap" style="height:10px"><div class="bar" style="width:'+pp+'%;background:'+col+'"></div></div></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:14px;padding:8px 0;border-top:1px solid #f1f5f9"><span style="color:#64748b">所持数</span><span>'+o.count+'体</span></div>'+
+    '<div style="font-size:12px;color:#94a3b8;text-align:center;margin-top:10px;background:#f8fafc;border-radius:10px;padding:8px">消費カロリー &gt; 摂取カロリーの日に経験値獲得！</div>';}
+  document.getElementById('modal-content').innerHTML=h;
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal(){document.getElementById('modal').style.display='none';}
+renderAll();
+</script>
+</body>
+</html>
